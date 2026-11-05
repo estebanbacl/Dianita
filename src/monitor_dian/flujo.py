@@ -1,3 +1,4 @@
+import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -61,7 +62,7 @@ def consultar(
         return ResultadoConsulta(
             busqueda,
             Resultado.ERROR_FLUJO,
-            detalle=error.message.splitlines()[0],
+            detalle=f"{error.message.splitlines()[0]} {_servicios_visibles(pagina)}",
             captura=_capturar(pagina, dir_capturas),
         )
     except Error as error:
@@ -127,8 +128,14 @@ def _esperar_respuesta_clasificable(
 
 
 def pulsar_texto(pagina: Page, texto: str) -> None:
-    """Las opciones son `div` sin rol y pueden quedar fuera de la pantalla."""
-    elemento = pagina.get_by_text(texto, exact=True).locator("visible=true").first
+    """Las opciones son `div` sin rol y pueden quedar fuera de la pantalla.
+
+    Algunos rótulos separan las palabras con `<br>` («Persona<br>Natural»), y su
+    texto queda sin espacio, y otros terminan en punto («Devoluciones.»). El
+    patrón admite ambos casos.
+    """
+    patron = r"\s*".join(re.escape(palabra) for palabra in texto.split())
+    elemento = pagina.get_by_text(re.compile(rf"^{patron}\.?$")).locator("visible=true").first
     elemento.wait_for(state="visible")
     elemento.scroll_into_view_if_needed()
     elemento.click()
@@ -138,6 +145,16 @@ def esperar_carga(pagina: Page) -> None:
     pagina.get_by_text("Cargando", exact=False).locator("visible=true").first.wait_for(
         state="hidden"
     )
+
+
+def _servicios_visibles(pagina: Page) -> str:
+    """Ayuda a distinguir un servicio que no se ofrece de un cambio en el sitio."""
+    try:
+        servicios = pagina.locator(".btnCategoria").all_inner_texts()
+    except Error:
+        return ""
+    nombres = [" ".join(servicio.split()) for servicio in servicios]
+    return f"Servicios visibles: {nombres}" if nombres else ""
 
 
 def _capturar(pagina: Page, dir_capturas: Path) -> Path | None:

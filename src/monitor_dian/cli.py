@@ -10,11 +10,15 @@ from .flujo import Busqueda, ResultadoConsulta, consultar
 
 RAIZ = Path(__file__).resolve().parents[2]
 PERSONA = "Persona Natural"
-CONTROL = Busqueda(PERSONA, "Videoatención", "RUT y orientación TAC")
+# Son dos porque la disponibilidad de un servicio cambia durante el día.
+CONTROLES = [
+    Busqueda(PERSONA, "Presencial", "RUT y orientación TAC"),
+    Busqueda(PERSONA, "Videoatención", "Defensoría"),
+]
 COMBINACIONES_DIAGNOSTICO = [
     Busqueda(PERSONA, "Videoatención", "Devoluciones"),
     Busqueda(PERSONA, "Presencial", "Devoluciones"),
-    CONTROL,
+    *CONTROLES,
 ]
 
 
@@ -32,14 +36,14 @@ def diagnostico(config: dict) -> int:
 
     for consulta in consultas:
         _mostrar(consulta)
-    control = next(c for c in consultas if c.busqueda == CONTROL)
-    if control.resultado is not Resultado.DISPONIBLE:
+    if not any(
+        c.busqueda in CONTROLES and c.resultado is Resultado.DISPONIBLE for c in consultas
+    ):
         print(
-            "\nEl control con RUT falló: el flujo está roto y no se puede concluir "
-            "nada sobre Devoluciones."
+            "\nNingún control dio DISPONIBLE: no se puede concluir nada sobre Devoluciones."
         )
         return 1
-    print("\nEl control con RUT funcionó: los resultados de Devoluciones son fiables.")
+    print("\nAl menos un control funcionó: los resultados de Devoluciones son fiables.")
     return 0
 
 
@@ -59,7 +63,7 @@ def main() -> int:
     analizador.add_argument("--config", type=Path, default=RAIZ / "config.toml")
     comandos = analizador.add_subparsers(dest="comando", required=True)
     comandos.add_parser(
-        "diagnostico", help="prueba una vez, solo lectura, Devoluciones y el control con RUT"
+        "diagnostico", help="prueba una vez, solo lectura, Devoluciones y los controles"
     )
     argumentos = analizador.parse_args()
     return diagnostico(configuracion.cargar(argumentos.config))

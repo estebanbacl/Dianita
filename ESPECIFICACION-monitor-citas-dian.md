@@ -67,15 +67,54 @@ Con servicio (RUT, resumido):
 - Si el captcha caduca, el campo se oculta y se vacía, y el captcha se reinicia.
 - El flujo «Gestionar cita» también tiene captcha (pantalla `DatosGestionCita`), pero queda fuera de alcance.
 
+### 2.1.1 Comprobado en el hito 1 (2026-11-05, hacia las 18:45)
+
+**Resultados por combinación** (Persona Natural)
+
+| Modalidad | Servicio | Resultado |
+|---|---|---|
+| Videoatención | Devoluciones | `SIN_SERVICIO` |
+| Videoatención | RUT y orientación TAC | `SIN_SERVICIO`, aunque el mismo día, más temprano, sí tenía trámite |
+| Videoatención | Cobranzas | `SIN_SERVICIO` |
+| Videoatención | Defensoría | `DISPONIBLE`, con fechas y horas |
+| Presencial | RUT y orientación TAC | `DISPONIBLE` |
+| Presencial | Cobranzas | `SIN_SERVICIO` |
+| Presencial | Devoluciones | No aparece en la lista de servicios |
+
+- El cambio en RUT indica que los trámites pueden aparecer y desaparecer durante el día. Por eso el control del diagnóstico usa dos servicios, y ninguno garantiza un resultado positivo.
+- Servicios de Videoatención: RUT y orientación TAC, Conferencias o capacitaciones, Devoluciones, Autogestión servicios en línea con NAF, Inconsistencias Grandes Contribuyentes, Cobranzas, Defensoría.
+- Servicios de Presencial: RUT y orientación TAC, Aduanas, Cobranzas, Recaudo (Corrección inconsistencias), Defensoría.
+
+**Detalles de la interfaz**
+
+- Algunos rótulos usan `<br>` («Persona<br>Natural»), y su texto queda como «PersonaNatural».
+- Los servicios de Videoatención terminan en punto («Devoluciones.»), pero los de Presencial no.
+- El trámite y la hora son `<select class="customSelect">` dentro de `div[nombre="Servicios"]` y `div[nombre="Horas"]`. La primera opción está vacía.
+
+**Pasos hasta el captcha** (Videoatención + Defensoría, sin escribir datos)
+
+1. **Paso 1:** persona, modalidad, servicio y trámite, y luego «Siguiente».
+2. **Paso 2:** en videoatención solo pide fecha y hora, sin ciudad ni sede. `div[nombre="btnFecha"]` abre un calendario Kendo, cuyos días libres son `td.k-calendar-td:not(.k-disabled)`. Al elegir un día aparecen las horas.
+3. **Paso 3:** muestra el captcha (`div[nombre="Captcha"]`), «Tipo de documento» y la casilla «Acepto el tratamiento de los datos personales». No se pasó de aquí.
+
+**Señales del servidor** (`ValidadorValidar`)
+
+| `DetalleAdicional` o contenido | Cuándo llega | Significado |
+|---|---|---|
+| `manejadorEncontroCategoria` | Tras la modalidad; **puede llegar después del clic en el servicio** | Lista de servicios. No sirve para clasificar y se ignora |
+| `manejadorEncontroColas` / `manejadorNoEncontroColas` | Tras el servicio | Hay o no hay trámites |
+| `manejadorEncontroFechas` | Al abrir el paso 2 | `ObjetosEncontrados[0]` es la lista de fechas libres |
+| Objetos con `HoraAgenda` y `NumeroAgendasDisponibles` | Al elegir una fecha | Horas libres y número de cupos |
+
+La falta de cupos debe verse en la respuesta de fechas. Aún no se ha observado esa respuesta cuando está vacía.
+
 ### 2.2 No comprobado
 
 | Incógnita | Por qué importa | Cómo resolverla |
 |---|---|---|
-| Qué ocurre después de la sección «Trámite» | Devoluciones no deja avanzar, y en el control con RUT no se pasó de ahí | Explorarlo en el hito 1 sin enviar datos, con un servicio que sí avance |
-| En qué paso se ve la falta de cupos | `manejadorEncontroColas` indica que hay trámites, **no necesariamente que haya fechas libres** | Igual que la anterior. Los archivos `listaCiudades`, `listaSedes`, `botonFecha`, `listaHoras` y `grillaCitas` sugieren esos pasos, pero es una inferencia |
-| Si Devoluciones se ofrece por videoatención | El mensaje habla de «especialidades», no de cupos. Si no se ofrece, consultar nunca dará resultado | Llamar al Contact Center: 57 601 489 9000 |
-| Si Devoluciones existe en modalidad Presencial | Sería una alternativa | Comando `diagnostico` (sección 4.6) |
-| Hora de publicación de los cupos | Permitiría ajustar el horario | Preguntar a la DIAN o revisar el historial acumulado |
+| Cómo responde `manejadorEncontroFechas` cuando no hay fechas | Es necesario para detectar `SIN_CUPOS` (hito 4) | Observarlo cuando ocurra. Mientras tanto, tratarlo como `RESPUESTA_DESCONOCIDA` |
+| Si Devoluciones se ofrece por videoatención | El botón existe, pero el servidor no devuelve trámites. Si nunca los abren, consultar no dará resultado | Llamar al Contact Center: 57 601 489 9000 |
+| Hora de publicación de los cupos | Permitiría ajustar el horario. El caso de RUT sugiere que hay cambios durante el día | Preguntar a la DIAN o revisar el historial acumulado |
 | Cuál es el cuerpo de la petición `ValidadorValidar` | No se capturó y no hace falta: se debe usar el flujo de la interfaz | No aplica |
 | Qué dicen los términos de uso sobre el acceso automatizado | Conviene conocerlos antes de dejarlo en marcha | Leer «Políticas de privacidad y términos de uso» en el pie del sitio |
 
@@ -193,7 +232,7 @@ La respuesta clasificable es la que tenga un `DetalleAdicional` de la forma `man
 |---|---|
 | `monitor estado` | Muestra el estado, la última consulta y los últimos resultados |
 | `monitor reanudar` | Quita la pausa y reinicia el contador de errores |
-| `monitor diagnostico` | Ejecuta **una vez**, solo lectura, las combinaciones de Devoluciones (Videoatención y Presencial) y un control con RUT. Si el control falla, el flujo está roto y no se puede concluir nada sobre Devoluciones |
+| `monitor diagnostico` | Ejecuta **una vez**, solo lectura, las combinaciones de Devoluciones (Videoatención y Presencial) y dos controles (Presencial + RUT y Videoatención + Defensoría). Si ningún control da `DISPONIBLE`, no se puede concluir nada sobre Devoluciones |
 
 ### 4.7 Frecuencia
 

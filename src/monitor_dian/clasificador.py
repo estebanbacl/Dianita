@@ -6,6 +6,8 @@ TEXTO_MODAL_SIN_SERVICIO = (
 )
 DETALLE_SIN_SERVICIO = "manejadorNoEncontroColas"
 DETALLE_DISPONIBLE = "manejadorEncontroColas"
+# Responde a la selección de modalidad y puede llegar después del clic en el servicio.
+DETALLE_CATEGORIAS = "manejadorEncontroCategoria"
 
 
 class Resultado(str, Enum):
@@ -30,7 +32,11 @@ def es_clasificable(datos: dict | None) -> bool:
     if datos is None:
         return False
     detalle = datos.get("DetalleAdicional")
-    return isinstance(detalle, str) and detalle.startswith("manejador")
+    return (
+        isinstance(detalle, str)
+        and detalle.startswith("manejador")
+        and detalle != DETALLE_CATEGORIAS
+    )
 
 
 def clasificar(datos: dict | None, modal_sin_servicio: bool) -> Resultado:

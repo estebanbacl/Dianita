@@ -56,6 +56,7 @@ def test_cuerpos_malformados(cuerpo):
 
 def test_solo_son_clasificables_los_manejadores():
     assert es_clasificable(cargar("sin_servicio.json"))
+    assert not es_clasificable({"DetalleAdicional": "manejadorEncontroCategoria"})
     assert not es_clasificable({"DetalleAdicional": "otro"})
     assert not es_clasificable({"DetalleAdicional": None})
     assert not es_clasificable(None)
