@@ -73,12 +73,7 @@ def consultar(
         contexto.close()
 
 
-def _recorrer(
-    pagina: Page,
-    busqueda: Busqueda,
-    respuestas: list[Response],
-    tiempo_maximo_s: float,
-) -> ResultadoConsulta:
+def abrir_hasta_modalidad(pagina: Page, busqueda: Busqueda) -> None:
     documento = pagina.goto(URL_SITIO)
     if documento is not None and documento.status != 200:
         raise _ErrorHttp(f"HTTP {documento.status} al abrir el sitio")
@@ -89,6 +84,15 @@ def _recorrer(
     esperar_carga(pagina)
     pulsar_texto(pagina, busqueda.modalidad)
     esperar_carga(pagina)
+
+
+def _recorrer(
+    pagina: Page,
+    busqueda: Busqueda,
+    respuestas: list[Response],
+    tiempo_maximo_s: float,
+) -> ResultadoConsulta:
+    abrir_hasta_modalidad(pagina, busqueda)
 
     marca = len(respuestas)
     pulsar_texto(pagina, busqueda.servicio)

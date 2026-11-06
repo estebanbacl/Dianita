@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.monitor-dian.consultar</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>__RAIZ__/.venv/bin/monitor</string>
+        <string>consultar</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>__RAIZ__</string>
+    <key>StartInterval</key>
+    <integer>3600</integer>
+    <key>LimitLoadToSessionType</key>
+    <string>Aqua</string>
+    <key>StandardOutPath</key>
+    <string>__RAIZ__/datos/launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>__RAIZ__/datos/launchd.log</string>
+</dict>
+</plist>
